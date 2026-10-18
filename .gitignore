@@ -1,0 +1,20 @@
+# Secrets: passwords and API keys, never on GitHub
+.env
+
+# Python virtual environment (rebuilt with "make install")
+.venv/
+
+# Python bytecode caches (created automatically when code runs)
+__pycache__/
+*.pyc
+
+# Test and coverage results
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Raw datasets: too big for GitHub (over 100 MB)
+data/raw/
+
+# Jupyter notebook autosaves
+.ipynb_checkpoints/
