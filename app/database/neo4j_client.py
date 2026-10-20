@@ -36,6 +36,16 @@ class Neo4jClient:
         with self._driver.session() as session:
             return session.execute_read(_work)
 
+    def profile(self, query: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Run a read query with PROFILE and return the execution plan (operators, rows, db hits)."""
+
+        def _work(tx: ManagedTransaction) -> dict[str, Any]:
+            """Execute the profiled query and keep only the plan from the result summary."""
+            return tx.run("PROFILE " + query, params or {}).consume().profile
+
+        with self._driver.session() as session:
+            return session.execute_read(_work)
+
     def run_write(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """Run a Cypher query that changes the database and return every row as a dictionary."""
 
