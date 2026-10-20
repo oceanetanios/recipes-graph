@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from neo4j import GraphDatabase, ManagedTransaction
+from neo4j import GraphDatabase, ManagedTransaction, unit_of_work
 from neo4j.exceptions import DriverError, Neo4jError
 
 
@@ -25,9 +25,16 @@ class Neo4jClient:
             return False
         return True
 
-    def run_read(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-        """Run a read-only Cypher query and return every row as a dictionary."""
+    def run_read(
+        self, query: str, params: dict[str, Any] | None = None, timeout: float | None = None
+    ) -> list[dict[str, Any]]:
+        """Run a read-only Cypher query and return every row as a dictionary.
 
+        The query runs in a READ transaction: Neo4j itself refuses any write in it. With a timeout
+        (in seconds), Neo4j stops the query if it runs too long.
+        """
+
+        @unit_of_work(timeout=timeout)
         def _work(tx: ManagedTransaction) -> list[dict[str, Any]]:
             """Execute the query inside a managed read transaction."""
             result = tx.run(query, params or {})
