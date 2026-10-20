@@ -14,7 +14,7 @@ endif
 .DEFAULT_GOAL := help
 
 # These names are commands, not files.
-.PHONY: help venv install run prepare-data docker-build docker-run docker-down logs test lint format clean
+.PHONY: help venv install run prepare-data seed docker-build docker-run docker-down logs test lint format clean
 
 help: ## Show this list of commands
 	@$(PYTHON) -c "import re; [print(f'  make {name:<14} {desc}') for name, desc in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile').read(), re.M)]"
@@ -31,6 +31,9 @@ run: ## Start the API locally with auto-reload on http://127.0.0.1:8000
 
 prepare-data: ## Clean the raw CSVs into data/processed (needs data/raw)
 	$(VENV_PY) -m scripts.clean_data
+
+seed: ## Load data/processed into Neo4j (Neo4j must be running: make docker-run)
+	$(VENV_PY) -m scripts.seed_data
 
 docker-build: ## Build the Docker images
 	docker compose build

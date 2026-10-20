@@ -35,3 +35,14 @@ class Neo4jClient:
 
         with self._driver.session() as session:
             return session.execute_read(_work)
+
+    def run_write(self, query: str, params: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+        """Run a Cypher query that changes the database and return every row as a dictionary."""
+
+        def _work(tx: ManagedTransaction) -> list[dict[str, Any]]:
+            """Execute the query inside a managed write transaction."""
+            result = tx.run(query, params or {})
+            return [record.data() for record in result]
+
+        with self._driver.session() as session:
+            return session.execute_write(_work)
