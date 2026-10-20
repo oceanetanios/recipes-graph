@@ -128,6 +128,36 @@ curl "http://localhost:8080/api/recipes/8739/similar?limit=2"
 
 Similarity comes from GDS Node Similarity, a Jaccard index where each ingredient is weighted by how rare it is, so sharing avocado counts much more than sharing salt. `shared_ingredients` explains each result. Why this choice: [docs/algorithms.md](docs/algorithms.md).
 
+### Recipe family (graph algorithm)
+
+`GET /api/recipes/{id}/community` returns the recipe family found by GDS Louvain: its size, characteristic ingredients and most popular recipes.
+
+```
+curl "http://localhost:8080/api/recipes/8739/community?limit=2"
+```
+
+```json
+{"recipe_id": 8739, "recipe_name": "wholly guacamole", "community": 30770, "size": 2763,
+ "characteristic_ingredients": ["cilantro", "salsa", "chili powder", "onion", "sour cream", "lime juice", "black beans", "cheddar cheese"],
+ "popular_recipes": [{"id": 89204, "name": "crock pot chicken with black beans cream cheese", "reviews": 987},
+                     {"id": 28148, "name": "oven fried chicken chimichangas", "reviews": 638}]}
+```
+
+### Path between two recipes (pathfinding)
+
+`GET /api/recipes/path?from=..&to=..` returns the shortest chain of similar recipes (shortestPath on SIMILAR_TO, at most 8 steps).
+
+```
+curl "http://localhost:8080/api/recipes/path?from=8739&to=21882"
+```
+
+```json
+{"found": true, "length": 4,
+ "path": [{"id": 8739, "name": "wholly guacamole"}, {"id": 62581, "name": "easy and authentic mexican guacamole avocado dip"},
+          {"id": 81319, "name": "vegetable quiche cups sbd"}, {"id": 204203, "name": "aunt lil s spinach balls"}, {"id": 21882, "name": "chicken pesto"}],
+ "scores": [0.475, 0.137, 0.143, 0.187]}
+```
+
 ### Ingredient suggestions
 
 `GET /api/ingredients?q=...`
@@ -250,7 +280,7 @@ app/
 │   └── agent.py
 ├── routers/              # HTTP layer: parameters, status codes
 │   ├── health.py         # GET /health
-│   ├── recipes.py        # GET /api/recipes/search, /api/recipes/{id}, /api/recipes/{id}/similar
+│   ├── recipes.py        # GET /api/recipes/search, /path, /{id}, /{id}/similar, /{id}/community
 │   ├── ingredients.py    # GET /api/ingredients
 │   └── agent.py          # POST /api/ask, POST /api/ask/check
 └── services/

@@ -13,7 +13,7 @@ NUTRITION_PROPERTIES = [
 
 NODE_PROPERTIES = {
     "User": ["id"],
-    "Recipe": ["id", "name", "minutes", "n_steps", "n_ingredients", "submitted", "description", "steps"]
+    "Recipe": ["id", "name", "minutes", "n_steps", "n_ingredients", "submitted", "description", "steps", "community"]
     + NUTRITION_PROPERTIES,
     "Ingredient": ["name", "recipe_count"],
     "IngredientCategory": ["name", "source"],

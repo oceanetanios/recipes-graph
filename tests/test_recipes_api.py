@@ -87,6 +87,30 @@ class FakeRecipeService:
         similar = {**SUMMARY, "id": 1, "score": 0.5, "shared_ingredients": ["zucchini"]}
         return {"recipe_name": RECIPE["name"], "similar": [similar]}
 
+    def community(self, recipe_id: int, limit: int = 5) -> dict[str, Any] | None:
+        """Recipe 99086 is in community 7."""
+        del limit
+        if recipe_id != 99086:
+            return None
+        return {
+            "recipe_name": RECIPE["name"],
+            "community": 7,
+            "size": 120,
+            "ingredients": ["zucchini"],
+            "recipes": [{"id": 1, "name": "zucchini bread", "reviews": 40}],
+        }
+
+    def path(self, from_id: int, to_id: int) -> dict[str, Any] | None:
+        """Recipes 99086 and 2 are linked through recipe 1; recipe 3 is unreachable."""
+        if 1 in (from_id, to_id):
+            return None
+        if 3 in (from_id, to_id):
+            return {"path": None, "scores": None}
+        return {
+            "path": [{"id": from_id, "name": "a"}, {"id": 1, "name": "b"}, {"id": to_id, "name": "c"}],
+            "scores": [0.4, 0.3],
+        }
+
     def suggest_ingredients(self, text: str, limit: int = 10) -> list[dict[str, Any]]:
         """Return one suggestion."""
         del text, limit
@@ -190,6 +214,26 @@ def test_similar_recipes_errors(client: TestClient) -> None:
     """Unknown recipe gives 404, more than 10 results is a 422."""
     assert client.get("/api/recipes/1/similar").status_code == 404
     assert client.get("/api/recipes/99086/similar", params={"limit": 11}).status_code == 422
+
+
+def test_community(client: TestClient) -> None:
+    """A recipe's community comes with its size, ingredients and popular recipes; unknown id is 404."""
+    body = client.get("/api/recipes/99086/community").json()
+
+    assert body["community"] == 7
+    assert body["characteristic_ingredients"] == ["zucchini"]
+    assert client.get("/api/recipes/1/community").status_code == 404
+
+
+def test_path(client: TestClient) -> None:
+    """A path gives its length and steps; no path gives found=false; same recipe twice is a 422."""
+    found = client.get("/api/recipes/path", params={"from": 99086, "to": 2}).json()
+    missing = client.get("/api/recipes/path", params={"from": 99086, "to": 3}).json()
+
+    assert found["found"] is True and found["length"] == 2
+    assert missing["found"] is False and missing["length"] is None
+    assert client.get("/api/recipes/path", params={"from": 5, "to": 5}).status_code == 422
+    assert client.get("/api/recipes/path", params={"from": 1, "to": 5}).status_code == 404
 
 
 def test_suggest_ingredients_needs_two_characters(client: TestClient) -> None:

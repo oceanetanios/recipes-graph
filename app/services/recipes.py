@@ -75,6 +75,33 @@ RETURN r.name AS recipe_name,
        } END) WHERE row IS NOT NULL] AS similar
 """
 
+# Recipe.community is written by GDS Louvain. Characteristic ingredients: frequent in the community AND rare
+# overall (count x IDF), otherwise salt would top every community.
+COMMUNITY_QUERY = """
+MATCH (r:Recipe {id: $id})
+WITH r, r.community AS c, COUNT { (:Recipe) } AS total
+CALL (c) { MATCH (o:Recipe {community: c}) RETURN count(o) AS size }
+CALL (c, total) {
+  MATCH (:Recipe {community: c})-[:CONTAINS]->(i:Ingredient)
+  WITH i, count(*) AS n ORDER BY n * log(toFloat(total) / i.recipe_count) DESC LIMIT 8
+  RETURN collect(i.name) AS ingredients
+}
+CALL (r, c) {
+  MATCH (o:Recipe {community: c}) WHERE o <> r
+  WITH o, COUNT { (o)<-[:REVIEWED]-() } AS reviews ORDER BY reviews DESC LIMIT $limit
+  RETURN collect({id: o.id, name: o.name, reviews: reviews}) AS recipes
+}
+RETURN r.name AS recipe_name, c AS community, size, ingredients, recipes
+"""
+
+# Shortest chain of SIMILAR_TO between two recipes (both ends bound, so Neo4j searches from both sides).
+PATH_QUERY = """
+MATCH (a:Recipe {id: $from_id}), (b:Recipe {id: $to_id})
+OPTIONAL MATCH p = shortestPath((a)-[:SIMILAR_TO*..8]-(b))
+RETURN [n IN nodes(p) | {id: n.id, name: n.name}] AS path,
+       [rel IN relationships(p) | round(rel.score, 3)] AS scores
+"""
+
 SUGGEST_INGREDIENTS_QUERY = """
 CALL db.index.fulltext.queryNodes('ingredient_name_fulltext', $text) YIELD node, score
 RETURN node.name AS name, node.recipe_count AS recipe_count
@@ -192,6 +219,16 @@ class RecipeService:
     def similar_recipes(self, recipe_id: int, limit: int = 10) -> dict[str, Any] | None:
         """Return the recipe name and its most similar recipes, or None if the id does not exist."""
         rows = self._db.run_read(SIMILAR_QUERY, {"id": recipe_id, "limit": limit})
+        return rows[0] if rows else None
+
+    def community(self, recipe_id: int, limit: int = 5) -> dict[str, Any] | None:
+        """Return the Louvain community of a recipe (size, ingredients, popular recipes), or None if unknown id."""
+        rows = self._db.run_read(COMMUNITY_QUERY, {"id": recipe_id, "limit": limit})
+        return rows[0] if rows else None
+
+    def path(self, from_id: int, to_id: int) -> dict[str, Any] | None:
+        """Return the shortest SIMILAR_TO chain between two recipes, or None if one of the ids does not exist."""
+        rows = self._db.run_read(PATH_QUERY, {"from_id": from_id, "to_id": to_id})
         return rows[0] if rows else None
 
     def suggest_ingredients(self, text: str, limit: int = 10) -> list[dict[str, Any]]:

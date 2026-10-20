@@ -99,6 +99,34 @@ class SimilarRecipesResponse(BaseModel):
     similar: list[SimilarRecipe]
 
 
+class RecipeRef(BaseModel):
+    """A short reference to a recipe."""
+
+    id: int
+    name: str
+    reviews: int | None = None
+
+
+class CommunityResponse(BaseModel):
+    """The recipe family (Louvain community) a recipe belongs to."""
+
+    recipe_id: int
+    recipe_name: str
+    community: int | None = Field(description="Community id from GDS Louvain (null if make gds was not run)")
+    size: int = Field(description="Number of recipes in the community")
+    characteristic_ingredients: list[str] = Field(description="Frequent in the community and rare overall")
+    popular_recipes: list[RecipeRef] = Field(description="Most reviewed other recipes of the community")
+
+
+class RecipePathResponse(BaseModel):
+    """The shortest chain of similar recipes between two recipes."""
+
+    found: bool
+    length: int | None = Field(description="Number of steps, null when no path within 8 steps")
+    path: list[RecipeRef]
+    scores: list[float] = Field(description="Similarity score of each step")
+
+
 class IngredientSuggestion(BaseModel):
     """An ingredient whose name matches a search text."""
 

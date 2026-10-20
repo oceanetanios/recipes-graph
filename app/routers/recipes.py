@@ -6,10 +6,12 @@ from fastapi import APIRouter, Depends, HTTPException, Path, Query, status
 
 from app.dependencies import get_recipe_service
 from app.models.recipes import (
+    CommunityResponse,
     ErrorMessage,
     IngredientResolution,
     MatchMode,
     RecipeDetail,
+    RecipePathResponse,
     RecipeSearchResponse,
     RecipeSummary,
     SimilarRecipe,
@@ -109,6 +111,52 @@ def search_recipes(  # pylint: disable=too-many-arguments
         offset=offset,
         has_more=has_more,
         results=[RecipeSummary(**row) for row in rows],
+    )
+
+
+@router.get(
+    "/path",
+    response_model=RecipePathResponse,
+    responses={404: {"model": ErrorMessage, "description": "One of the recipe ids does not exist"}, **DATABASE_DOWN},
+)
+def recipe_path(
+    service: Service,
+    from_id: Annotated[int, Query(alias="from", ge=1, description="Start recipe id")],
+    to_id: Annotated[int, Query(alias="to", ge=1, description="End recipe id")],
+) -> RecipePathResponse:
+    """Shortest chain of similar recipes from one recipe to another (shortestPath on SIMILAR_TO, at most 8 steps)."""
+    if from_id == to_id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="from and to must be different")
+    row = service.path(from_id, to_id)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="One of the recipes does not exist")
+    path = row["path"] or []
+    return RecipePathResponse(
+        found=bool(path), length=len(path) - 1 if path else None, path=path, scores=row["scores"] or []
+    )
+
+
+@router.get(
+    "/{recipe_id}/community",
+    response_model=CommunityResponse,
+    responses={404: {"model": ErrorMessage, "description": "No recipe with this id"}, **DATABASE_DOWN},
+)
+def recipe_community(
+    service: Service,
+    recipe_id: Annotated[int, Path(ge=1)],
+    limit: Annotated[int, Query(ge=1, le=20, description="How many popular recipes of the community")] = 5,
+) -> CommunityResponse:
+    """The recipe family this recipe belongs to (GDS Louvain on the similarity graph), to discover related dishes."""
+    row = service.community(recipe_id, limit)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Recipe {recipe_id} not found")
+    return CommunityResponse(
+        recipe_id=recipe_id,
+        recipe_name=row["recipe_name"],
+        community=row["community"],
+        size=row["size"] if row["community"] is not None else 0,
+        characteristic_ingredients=row["ingredients"] if row["community"] is not None else [],
+        popular_recipes=row["recipes"] if row["community"] is not None else [],
     )
 
 

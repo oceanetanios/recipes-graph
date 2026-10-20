@@ -94,6 +94,20 @@ def test_similar_recipes_share_ingredients(service: RecipeService) -> None:
     assert all(item["shared_ingredients"] for item in row["similar"])
 
 
+def test_community_and_path(service: RecipeService) -> None:
+    """A recipe and its most similar recipe are in a community, and are linked by a path of length 1."""
+    recipe_id = service.search(["avocado", "lime"], limit=1)[0][0]["id"]
+    similar = service.similar_recipes(recipe_id, limit=1)["similar"]
+    community = service.community(recipe_id)
+    if not similar or community["community"] is None:
+        pytest.skip("GDS results not computed yet (make gds)")
+
+    path = service.path(recipe_id, similar[0]["id"])
+
+    assert community["size"] > 1
+    assert [step["id"] for step in path["path"]] == [recipe_id, similar[0]["id"]]
+
+
 def test_unknown_filters(service: RecipeService) -> None:
     """Existing filter values are accepted, others are reported."""
     assert not service.unknown_filters("vegetarian", "desserts", "italian")
