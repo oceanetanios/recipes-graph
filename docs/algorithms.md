@@ -43,3 +43,23 @@ Alternatives considered:
 - computing Jaccard in Cypher at request time: fine for one recipe, but comparing all pairs is O(n^2) in Cypher; GDS does it in memory with optimized code, once
 - KNN on node embeddings (FastRP): could also use tags and cuisines, kept for the ML step (step 23)
 - storing SIMILAR_TO vs computing at request time: stored, because the API answers in milliseconds and the similarity only changes when the data is reloaded. The cost is 407k extra relationships, recomputed by make gds.
+
+## 2. Recipe families: Louvain
+
+Question: which recipes belong to the same family of dishes?
+
+How:
+- projection: Recipe nodes with SIMILAR_TO as undirected relationships, weighted by score (41,240 nodes, 814,910 relationships)
+- gds.louvain.write with relationshipWeightProperty: score, writes Recipe.community (indexed)
+- result: 510 communities, modularity 0.674 (above 0.3 means a real community structure), 40 seconds
+- endpoint: GET /api/recipes/{id}/community: size, characteristic ingredients (count in the community x IDF, so salt does not top every family) and the most reviewed recipes of the family
+
+Example: the community of "wholly guacamole" has 2,763 recipes, characteristic ingredients cilantro, salsa, chili powder, sour cream, black beans, cheddar cheese, popular recipes chicken with black beans, chimichangas, burrito casserole: Mexican / Tex-Mex cooking, found without using the cuisine tags.
+
+Why Louvain: it optimizes modularity on weighted graphs and scales to the whole graph in seconds. Label Propagation was the alternative: faster, but its results can change between runs.
+
+## 3. Pathfinding: shortest chain of similar recipes
+
+GET /api/recipes/path?from=..&to=.. runs Cypher shortestPath on SIMILAR_TO (undirected, at most 8 steps). Both ends are bound, so Neo4j searches from both sides (bidirectional BFS) instead of exploring the whole graph. The 8-step limit bounds the cost as the graph grows.
+
+Example: wholly guacamole -> easy authentic mexican guacamole -> vegetable quiche cups -> aunt lil s spinach balls -> chicken pesto (4 steps).

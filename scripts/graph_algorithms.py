@@ -7,7 +7,9 @@ Usage (from the project root, with Neo4j running and loaded):
    ingredient: log(number of recipes / recipes using it). Rare ingredients weigh more than salt.
 2. Node Similarity (weighted Jaccard) on that projection: for each recipe, its 10 most similar recipes,
    written as (:Recipe)-[:SIMILAR_TO {score}]->(:Recipe).
-3. Drop the in-memory projection.
+3. Louvain on the SIMILAR_TO graph: groups of recipes that are similar to each other (recipe families),
+   written as Recipe.community.
+Every in-memory projection is dropped at the end.
 """
 
 import time
@@ -76,6 +78,38 @@ def similar_recipes(db: Neo4jClient) -> None:
     )
 
 
+SIMILARITY_GRAPH = "recipe_similarity"
+
+PROJECT_SIMILARITY = """
+CALL gds.graph.project($name, 'Recipe', {SIMILAR_TO: {orientation: 'UNDIRECTED', properties: 'score'}})
+YIELD nodeCount, relationshipCount
+RETURN nodeCount AS nodes, relationshipCount AS relationships
+"""
+
+LOUVAIN = """
+CALL gds.louvain.write($name, {relationshipWeightProperty: 'score', writeProperty: 'community'})
+YIELD communityCount, modularity
+RETURN communityCount, round(modularity, 3) AS modularity
+"""
+
+
+def recipe_communities(db: Neo4jClient) -> None:
+    """Louvain on the SIMILAR_TO graph: recipe families, written as Recipe.community (with an index)."""
+    start = time.perf_counter()
+    db.run_write(DROP_PROJECTION, {"name": SIMILARITY_GRAPH})
+    projection = db.run_write(PROJECT_SIMILARITY, {"name": SIMILARITY_GRAPH})[0]
+    try:
+        stats = db.run_write(LOUVAIN, {"name": SIMILARITY_GRAPH})[0]
+    finally:
+        db.run_write(DROP_PROJECTION, {"name": SIMILARITY_GRAPH})
+    db.run_write("CREATE RANGE INDEX recipe_community IF NOT EXISTS FOR (r:Recipe) ON (r.community)")
+    print(
+        f"  projection: {projection['nodes']:,} recipes, {projection['relationships']:,} relationships; "
+        f"louvain: {stats['communityCount']:,} communities, modularity {stats['modularity']}, "
+        f"{time.perf_counter() - start:.1f} s"
+    )
+
+
 def main() -> None:
     """Run every algorithm."""
     db = Neo4jClient(settings.neo4j_uri, settings.neo4j_user, settings.neo4j_password)
@@ -84,6 +118,8 @@ def main() -> None:
             raise SystemExit(f"Cannot reach Neo4j at {settings.neo4j_uri}. Is it running? (make docker-run)")
         print("similar recipes (Node Similarity, IDF-weighted Jaccard)...")
         similar_recipes(db)
+        print("recipe communities (Louvain on SIMILAR_TO)...")
+        recipe_communities(db)
     finally:
         db.close()
 
