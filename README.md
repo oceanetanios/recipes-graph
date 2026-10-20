@@ -35,6 +35,10 @@ Only Nginx is exposed to the outside. Neo4j's ports (7474 for the browser, 7687 
    ```
    make prepare-data
    ```
+6. Start the stack (see below), then load the data into Neo4j (about 3 minutes):
+   ```
+   make seed
+   ```
 
 ## Run with Docker
 
@@ -53,6 +57,7 @@ make docker-down     # stop everything (data is kept)
 make help      # list all commands
 make run       # run the API locally on http://127.0.0.1:8000
 make prepare-data  # clean the raw CSVs into data/processed
+make seed      # load data/processed into Neo4j (Neo4j must be running)
 make test      # run the tests with coverage
 make lint      # pylint
 make format    # black
