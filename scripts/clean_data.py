@@ -17,6 +17,8 @@ from pathlib import Path
 
 import pandas as pd
 
+from app.ingredient_names import normalize_name as basic_clean
+from app.ingredient_names import singular_candidates
 from scripts.tag_groups import COURSES, CUISINE_PARENT, CUISINES, DIETS
 
 RAW_DIR = Path("data/raw")
@@ -40,22 +42,9 @@ LEADING_DESCRIPTORS = {"fresh", "freshly", "large", "medium", "small", "chopped"
 SALT_AND_PEPPER = re.compile(r"^(?P<salt>.*\bsalt) and (?P<pepper>.*\bpepper)$")
 
 
-def basic_clean(name: str) -> str:
-    """Lowercase, trim, use 'and' instead of '&' and collapse repeated spaces."""
-    name = name.lower().replace("&", " and ")
-    return re.sub(r"\s+", " ", name).strip()
-
-
 def singular(name: str, known: set[str]) -> str:
     """Return the singular form of a plural name if that singular form is itself a known ingredient."""
-    candidates = []
-    if name.endswith("ies"):
-        candidates.append(name[:-3] + "y")
-    if name.endswith("es"):
-        candidates.append(name[:-2])
-    if name.endswith("s") and not name.endswith("ss"):
-        candidates.append(name[:-1])
-    for candidate in candidates:
+    for candidate in singular_candidates(name):
         if candidate in known:
             return candidate
     return name
