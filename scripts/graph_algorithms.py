@@ -30,7 +30,8 @@ MATCH (r:Recipe)-[:CONTAINS]->(i:Ingredient)
 WITH gds.graph.project(
   $name, r, i,
   {sourceNodeLabels: 'Recipe', targetNodeLabels: 'Ingredient', relationshipType: 'CONTAINS',
-   relationshipProperties: {weight: log(toFloat(recipes) / i.recipe_count)}}
+   relationshipProperties: {weight: log(toFloat(recipes) / i.recipe_count)}},
+  $config
 ) AS graph
 RETURN graph.nodeCount AS nodes, graph.relationshipCount AS relationships
 """
@@ -62,7 +63,7 @@ def similar_recipes(db: Neo4jClient) -> None:
     start = time.perf_counter()
     db.run_write(DROP_PROJECTION, {"name": GRAPH_NAME})
     deleted = delete_in_batches(db, DELETE_OLD_SIMILARITIES)
-    projection = db.run_write(PROJECT_WEIGHTED, {"name": GRAPH_NAME})[0]
+    projection = db.run_write(PROJECT_WEIGHTED, {"name": GRAPH_NAME, "config": {}})[0]
     print(f"  projection: {projection['nodes']:,} nodes, {projection['relationships']:,} relationships")
     try:
         stats = db.run_write(

@@ -14,7 +14,7 @@ endif
 .DEFAULT_GOAL := help
 
 # These names are commands, not files.
-.PHONY: help venv install run prepare-data seed gds benchmark evaluate-agent docker-build docker-run docker-down logs test lint format clean
+.PHONY: help venv install run prepare-data seed gds ml benchmark evaluate-agent docker-build docker-run docker-down logs test lint format clean
 
 help: ## Show this list of commands
 	@$(PYTHON) -c "import re; [print(f'  make {name:<14} {desc}') for name, desc in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile').read(), re.M)]"
@@ -37,6 +37,9 @@ seed: ## Load data/processed into Neo4j (Neo4j must be running: make docker-run)
 
 gds: ## Run the graph algorithms (GDS) and write their results (after make seed, about 3 minutes)
 	$(VENV_PY) -m scripts.graph_algorithms
+
+ml: ## ML workflow: predict vegetarian recipes from FastRP embeddings, writes docs/ml.md
+	$(VENV_PY) -m scripts.ml_diet
 
 benchmark: ## Compare queries with and without their index (PROFILE db hits + timings)
 	$(VENV_PY) -m scripts.benchmark
