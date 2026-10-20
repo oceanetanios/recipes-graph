@@ -39,6 +39,10 @@ Only Nginx is exposed to the outside. Neo4j's ports (7474 for the browser, 7687 
    ```
    make seed
    ```
+7. Run the graph algorithms, which write the similar recipes (about 3 minutes):
+   ```
+   make gds
+   ```
 
 ## Run with Docker
 
@@ -102,6 +106,27 @@ curl "http://localhost:8080/api/recipes/347682"
 ```
 
 Returns the steps, ingredients, cuisines, diets, courses, nutrition, number of reviews and average rating.
+
+### Similar recipes (graph algorithm)
+
+`GET /api/recipes/{id}/similar`
+
+```
+curl "http://localhost:8080/api/recipes/8739/similar?limit=2"
+```
+
+```json
+{
+  "recipe_id": 8739,
+  "recipe_name": "wholly guacamole",
+  "similar": [
+    {"id": 32721, "name": "whack a mole eh", "score": 0.553, "shared_ingredients": ["lime", "jalapeno pepper", "avocado", "cilantro", "tomatoes"], "minutes": 15, "reviews": 9},
+    {"id": 362382, "name": "salsa cruda pico de gallo", "score": 0.503, "shared_ingredients": ["jalapeno pepper", "cilantro", "tomatoes", "garlic clove", "onion", "salt"], "minutes": 20, "reviews": 20}
+  ]
+}
+```
+
+Similarity comes from GDS Node Similarity, a Jaccard index where each ingredient is weighted by how rare it is, so sharing avocado counts much more than sharing salt. `shared_ingredients` explains each result. Why this choice: [docs/algorithms.md](docs/algorithms.md).
 
 ### Ingredient suggestions
 
@@ -197,6 +222,7 @@ make help      # list all commands
 make run       # run the API locally on http://127.0.0.1:8000
 make prepare-data  # clean the raw CSVs into data/processed
 make seed      # load data/processed into Neo4j (Neo4j must be running)
+make gds       # run the graph algorithms and write their results (after make seed)
 make benchmark # compare queries with and without their index (see docs/benchmarks.md)
 make evaluate-agent  # ask the AI agent 13 test questions, writes docs/agent_evaluation.md
 make test      # run the tests with coverage
@@ -224,7 +250,7 @@ app/
 │   └── agent.py
 ├── routers/              # HTTP layer: parameters, status codes
 │   ├── health.py         # GET /health
-│   ├── recipes.py        # GET /api/recipes/search, GET /api/recipes/{id}
+│   ├── recipes.py        # GET /api/recipes/search, /api/recipes/{id}, /api/recipes/{id}/similar
 │   ├── ingredients.py    # GET /api/ingredients
 │   └── agent.py          # POST /api/ask, POST /api/ask/check
 └── services/
@@ -232,6 +258,6 @@ app/
 docs/                     # graph model, benchmarks, diagrams, screenshots
 nginx/nginx.conf          # reverse proxy configuration
 notebooks/                # data exploration
-scripts/                  # clean_data.py, seed_data.py, benchmark.py, evaluate_agent.py
+scripts/                  # clean_data.py, seed_data.py, graph_algorithms.py, benchmark.py, evaluate_agent.py
 tests/                    # unit, API and Cypher tests
 ```

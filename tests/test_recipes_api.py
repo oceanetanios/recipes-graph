@@ -79,6 +79,14 @@ class FakeRecipeService:
         """Only recipe 99086 exists."""
         return RECIPE if recipe_id == 99086 else None
 
+    def similar_recipes(self, recipe_id: int, limit: int = 10) -> dict[str, Any] | None:
+        """Recipe 99086 has one similar recipe."""
+        del limit
+        if recipe_id != 99086:
+            return None
+        similar = {**SUMMARY, "id": 1, "score": 0.5, "shared_ingredients": ["zucchini"]}
+        return {"recipe_name": RECIPE["name"], "similar": [similar]}
+
     def suggest_ingredients(self, text: str, limit: int = 10) -> list[dict[str, Any]]:
         """Return one suggestion."""
         del text, limit
@@ -168,6 +176,20 @@ def test_get_recipe(client: TestClient) -> None:
 def test_get_missing_recipe_is_404(client: TestClient) -> None:
     """An unknown id gives 404."""
     assert client.get("/api/recipes/1").status_code == 404
+
+
+def test_similar_recipes(client: TestClient) -> None:
+    """Similar recipes come with their score and the shared ingredients that explain them."""
+    response = client.get("/api/recipes/99086/similar")
+
+    assert response.status_code == 200
+    assert response.json()["similar"][0]["shared_ingredients"] == ["zucchini"]
+
+
+def test_similar_recipes_errors(client: TestClient) -> None:
+    """Unknown recipe gives 404, more than 10 results is a 422."""
+    assert client.get("/api/recipes/1/similar").status_code == 404
+    assert client.get("/api/recipes/99086/similar", params={"limit": 11}).status_code == 422
 
 
 def test_suggest_ingredients_needs_two_characters(client: TestClient) -> None:

@@ -42,8 +42,9 @@ Relationships:
     (:Cuisine)-[:PART_OF]->(:Cuisine)
     (:Recipe)-[:FITS_DIET]->(:Diet)
     (:Recipe)-[:SERVED_AS]->(:Course)
+    (:Recipe)-[:SIMILAR_TO {score}]->(:Recipe)      computed by GDS, see docs/algorithms.md
 
-7 labels, 8 relationship types.
+7 labels, 9 relationship types (8 loaded from the data, SIMILAR_TO computed).
 
 Notes on properties:
 - REVIEWED.rating is 1 to 5, or null when the raw rating was 0 (comment without a rating)

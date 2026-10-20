@@ -5,6 +5,7 @@ from typing import Any
 from app.services.recipes import (
     RESOLVE_INGREDIENTS_QUERY,
     SEARCH_QUERY,
+    SIMILAR_QUERY,
     SUGGEST_INGREDIENTS_QUERY,
     UNKNOWN_FILTERS_QUERY,
     RecipeService,
@@ -118,6 +119,16 @@ def test_unknown_filters_lists_only_bad_values() -> None:
     db = FakeDb({UNKNOWN_FILTERS_QUERY: [{"diet": "diet", "course": None, "cuisine": None}]})
 
     assert RecipeService(db).unknown_filters("carnivore", None, None) == ["diet"]
+
+
+def test_similar_recipes_passes_id_and_limit() -> None:
+    """The similar-recipes query gets the id and limit, and an unknown id gives None."""
+    row = {"recipe_name": "guacamole", "similar": []}
+    db = FakeDb({SIMILAR_QUERY: [row]})
+
+    assert RecipeService(db).similar_recipes(8739, limit=3) == row
+    assert db.calls[0][1] == {"id": 8739, "limit": 3}
+    assert RecipeService(FakeDb()).similar_recipes(1) is None
 
 
 def test_get_recipe_returns_none_when_missing() -> None:

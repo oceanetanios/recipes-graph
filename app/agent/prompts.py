@@ -20,6 +20,7 @@ Facts about the data:
   A recipe has NO rating property: average rating = avg(rev.rating). Popularity = number of REVIEWED.
 - Nutrition is on Recipe: calories, then percent of daily value: total_fat_pdv, sugar_pdv, sodium_pdv,
   protein_pdv, saturated_fat_pdv, carbs_pdv.
+- SIMILAR_TO links each recipe to its 10 most similar recipes (shared rare ingredients), score 0 to 1.
 - To search recipes by words in their name use:
   CALL db.index.fulltext.queryNodes('recipe_name_fulltext', 'words') YIELD node, score
 
