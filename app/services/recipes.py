@@ -59,6 +59,22 @@ RETURN r.id AS id, r.name AS name, r.minutes AS minutes, r.n_steps AS n_steps,
        reviews, average_rating
 """
 
+# SIMILAR_TO is precomputed by GDS Node Similarity (scripts/graph_algorithms.py), so this is a cheap read.
+SIMILAR_QUERY = """
+MATCH (r:Recipe {id: $id})
+OPTIONAL MATCH (r)-[s:SIMILAR_TO]->(other:Recipe)
+WITH r, s, other ORDER BY s.score DESC LIMIT $limit
+RETURN r.name AS recipe_name,
+       [row IN collect(CASE WHEN other IS NULL THEN null ELSE {
+          id: other.id, name: other.name, score: round(s.score, 3), minutes: other.minutes,
+          reviews: COUNT { (other)<-[:REVIEWED]-() },
+          shared_ingredients: COLLECT {
+            MATCH (r)-[:CONTAINS]->(i:Ingredient)<-[:CONTAINS]-(other)
+            RETURN i.name ORDER BY i.recipe_count
+          }
+       } END) WHERE row IS NOT NULL] AS similar
+"""
+
 SUGGEST_INGREDIENTS_QUERY = """
 CALL db.index.fulltext.queryNodes('ingredient_name_fulltext', $text) YIELD node, score
 RETURN node.name AS name, node.recipe_count AS recipe_count
@@ -171,6 +187,11 @@ class RecipeService:
     def get_recipe(self, recipe_id: int) -> dict[str, Any] | None:
         """Return all the details of one recipe, or None if the id does not exist."""
         rows = self._db.run_read(RECIPE_QUERY, {"id": recipe_id})
+        return rows[0] if rows else None
+
+    def similar_recipes(self, recipe_id: int, limit: int = 10) -> dict[str, Any] | None:
+        """Return the recipe name and its most similar recipes, or None if the id does not exist."""
+        rows = self._db.run_read(SIMILAR_QUERY, {"id": recipe_id, "limit": limit})
         return rows[0] if rows else None
 
     def suggest_ingredients(self, text: str, limit: int = 10) -> list[dict[str, Any]]:

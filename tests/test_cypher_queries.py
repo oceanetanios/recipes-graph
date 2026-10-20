@@ -80,6 +80,20 @@ def test_get_recipe_details(service: RecipeService) -> None:
     assert recipe["average_rating"] is None or 1 <= recipe["average_rating"] <= 5
 
 
+def test_similar_recipes_share_ingredients(service: RecipeService) -> None:
+    """Every similar recipe (from GDS) shares at least one ingredient, and scores are sorted."""
+    recipe_id = service.search(["avocado", "lime"], limit=1)[0][0]["id"]
+
+    row = service.similar_recipes(recipe_id, limit=5)
+
+    if not row["similar"]:
+        pytest.skip("SIMILAR_TO not computed yet (make gds)")
+    scores = [item["score"] for item in row["similar"]]
+    assert scores == sorted(scores, reverse=True)
+    assert all(0 < score <= 1 for score in scores)
+    assert all(item["shared_ingredients"] for item in row["similar"])
+
+
 def test_unknown_filters(service: RecipeService) -> None:
     """Existing filter values are accepted, others are reported."""
     assert not service.unknown_filters("vegetarian", "desserts", "italian")

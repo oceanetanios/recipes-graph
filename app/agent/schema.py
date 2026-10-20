@@ -32,6 +32,7 @@ RELATIONSHIPS = {
     "PART_OF": ("Cuisine", "Cuisine", []),
     "FITS_DIET": ("Recipe", "Diet", []),
     "SERVED_AS": ("Recipe", "Course", []),
+    "SIMILAR_TO": ("Recipe", "Recipe", ["score"]),
 }
 
 LABELS = frozenset(NODE_PROPERTIES)

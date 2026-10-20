@@ -80,6 +80,25 @@ class RecipeDetail(BaseModel):
     average_rating: float | None = Field(description="Average of the 1-5 ratings, null when nobody rated it")
 
 
+class SimilarRecipe(BaseModel):
+    """A recipe similar to another one, with the reason (the ingredients they share)."""
+
+    id: int
+    name: str
+    score: float = Field(description="Node Similarity score (IDF-weighted Jaccard, 0 to 1)")
+    shared_ingredients: list[str] = Field(description="Why: ingredients both recipes contain, rarest first")
+    minutes: int | None
+    reviews: int
+
+
+class SimilarRecipesResponse(BaseModel):
+    """The most similar recipes to one recipe."""
+
+    recipe_id: int
+    recipe_name: str
+    similar: list[SimilarRecipe]
+
+
 class IngredientSuggestion(BaseModel):
     """An ingredient whose name matches a search text."""
 

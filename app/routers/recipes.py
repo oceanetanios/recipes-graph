@@ -12,6 +12,8 @@ from app.models.recipes import (
     RecipeDetail,
     RecipeSearchResponse,
     RecipeSummary,
+    SimilarRecipe,
+    SimilarRecipesResponse,
 )
 from app.services.recipes import RecipeService, normalize_filter
 
@@ -107,6 +109,31 @@ def search_recipes(  # pylint: disable=too-many-arguments
         offset=offset,
         has_more=has_more,
         results=[RecipeSummary(**row) for row in rows],
+    )
+
+
+@router.get(
+    "/{recipe_id}/similar",
+    response_model=SimilarRecipesResponse,
+    responses={404: {"model": ErrorMessage, "description": "No recipe with this id"}, **DATABASE_DOWN},
+)
+def similar_recipes(
+    service: Service,
+    recipe_id: Annotated[int, Path(ge=1)],
+    limit: Annotated[int, Query(ge=1, le=10, description="How many similar recipes")] = 5,
+) -> SimilarRecipesResponse:
+    """Recipes that share the most characteristic ingredients with this one (GDS Node Similarity).
+
+    Similarity is a Jaccard index weighted by how rare each ingredient is (IDF), so sharing saffron counts
+    much more than sharing salt. Each result lists the shared ingredients that explain it, rarest first.
+    """
+    row = service.similar_recipes(recipe_id, limit)
+    if row is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Recipe {recipe_id} not found")
+    return SimilarRecipesResponse(
+        recipe_id=recipe_id,
+        recipe_name=row["recipe_name"],
+        similar=[SimilarRecipe(**item) for item in row["similar"]],
     )
 
 
