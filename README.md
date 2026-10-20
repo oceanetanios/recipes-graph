@@ -51,6 +51,17 @@ make docker-down     # stop everything (data is kept)
 - API docs: http://localhost:8080/docs
 - Neo4j Browser: http://localhost:7474 (user `neo4j`, password from `.env`)
 
+## Screenshots
+
+Recipes containing basil in the Neo4j Browser:
+
+![Recipes containing basil in the Neo4j Browser](docs/screenshots/neo4j_graph.png)
+
+PROFILE of a two-ingredient search: Neo4j starts from the indexed ingredient nodes (NodeUniqueIndexSeek) instead of scanning every recipe, which costs about 20k db hits instead of 1.1M (see docs/benchmarks.md):
+
+![PROFILE plan of the egg and parmesan query](docs/screenshots/profile_index.png)
+
+
 ## Development
 
 ```
