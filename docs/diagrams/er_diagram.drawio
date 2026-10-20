@@ -1,0 +1,85 @@
+<mxfile host="app.diagrams.net">
+  <diagram id="er-diagram" name="ER diagram (raw CSV)">
+    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="title" value="Food.com raw data: ER diagram" style="text;html=1;fontSize=20;fontStyle=1;align=left;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="40" y="20" width="600" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="recipes" value="RAW_recipes" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="60" y="100" width="340" height="390" as="geometry" />
+        </mxCell>
+        <mxCell id="r1" value="PK  id  (int)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;fontStyle=1;" vertex="1" parent="recipes">
+          <mxGeometry y="30" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r2" value="name  (text, not unique)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="60" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r3" value="minutes  (int)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="90" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r4" value="contributor_id  (int, a food.com account)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="120" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r5" value="submitted  (date)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="150" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r6" value="tags  (list stored as text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="180" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r7" value="nutrition  (list of 7 numbers stored as text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="210" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r8" value="n_steps  (int)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="240" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r9" value="steps  (list stored as text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="270" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r10" value="description  (text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="300" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r11" value="ingredients  (list stored as text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="330" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="r12" value="n_ingredients  (int)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="recipes">
+          <mxGeometry y="360" width="340" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="inter" value="RAW_interactions" style="swimlane;fontStyle=1;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=0;marginBottom=0;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="700" y="100" width="340" height="180" as="geometry" />
+        </mxCell>
+        <mxCell id="i1" value="FK  user_id  (int, a food.com account)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;fontStyle=1;" vertex="1" parent="inter">
+          <mxGeometry y="30" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="i2" value="FK  recipe_id  (int)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;fontStyle=1;" vertex="1" parent="inter">
+          <mxGeometry y="60" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="i3" value="date  (date)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="inter">
+          <mxGeometry y="90" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="i4" value="rating  (int 0 to 5, 0 = no rating)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="inter">
+          <mxGeometry y="120" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="i5" value="review  (text)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=8;html=1;" vertex="1" parent="inter">
+          <mxGeometry y="150" width="340" height="30" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-recipe" value="1 recipe  :  1..N interactions&lt;br&gt;(recipe_id -&gt; id)" style="edgeStyle=entityRelationEdgeStyle;endArrow=ERmany;startArrow=ERmandOne;html=1;fontSize=12;endFill=0;startFill=0;" edge="1" parent="1" source="r1" target="i2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-account" value="same food.com accounts&lt;br&gt;(contributor_id ~ user_id, no table of its own)" style="edgeStyle=entityRelationEdgeStyle;endArrow=none;html=1;fontSize=12;dashed=1;" edge="1" parent="1" source="r4" target="i1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="note" value="Composite key: user_id + recipe_id is unique in RAW_interactions.&lt;br&gt;No users table: users only exist through contributor_id and user_id." style="text;html=1;fontSize=12;align=left;verticalAlign=top;whiteSpace=wrap;" vertex="1" parent="1">
+          <mxGeometry x="700" y="320" width="420" height="60" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
