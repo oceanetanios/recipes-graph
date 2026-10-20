@@ -253,6 +253,7 @@ make run       # run the API locally on http://127.0.0.1:8000
 make prepare-data  # clean the raw CSVs into data/processed
 make seed      # load data/processed into Neo4j (Neo4j must be running)
 make gds       # run the graph algorithms and write their results (after make seed)
+make ml        # ML workflow: predict vegetarian recipes from graph embeddings (see docs/ml.md)
 make benchmark # compare queries with and without their index (see docs/benchmarks.md)
 make evaluate-agent  # ask the AI agent 13 test questions, writes docs/agent_evaluation.md
 make test      # run the tests with coverage
@@ -288,6 +289,6 @@ app/
 docs/                     # graph model, benchmarks, diagrams, screenshots
 nginx/nginx.conf          # reverse proxy configuration
 notebooks/                # data exploration
-scripts/                  # clean_data.py, seed_data.py, graph_algorithms.py, benchmark.py, evaluate_agent.py
+scripts/                  # clean_data.py, seed_data.py, graph_algorithms.py, ml_diet.py, benchmark.py, evaluate_agent.py
 tests/                    # unit, API and Cypher tests
 ```
