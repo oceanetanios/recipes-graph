@@ -14,7 +14,7 @@ endif
 .DEFAULT_GOAL := help
 
 # These names are commands, not files.
-.PHONY: help venv install run docker-build docker-run docker-down logs test lint format clean
+.PHONY: help venv install run prepare-data docker-build docker-run docker-down logs test lint format clean
 
 help: ## Show this list of commands
 	@$(PYTHON) -c "import re; [print(f'  make {name:<14} {desc}') for name, desc in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile').read(), re.M)]"
@@ -28,6 +28,9 @@ install: venv ## Install all runtime and development libraries into .venv
 
 run: ## Start the API locally with auto-reload on http://127.0.0.1:8000
 	$(VENV_PY) -m uvicorn app.main:app --reload
+
+prepare-data: ## Clean the raw CSVs into data/processed (needs data/raw)
+	$(VENV_PY) -m scripts.clean_data
 
 docker-build: ## Build the Docker images
 	docker compose build
@@ -45,10 +48,10 @@ test: ## Run the tests with a coverage report
 	$(VENV_PY) -m pytest --cov=app --cov-report=term-missing
 
 lint: ## Check code quality with pylint
-	$(VENV_PY) -m pylint app tests
+	$(VENV_PY) -m pylint app scripts tests
 
 format: ## Format the code with black (line length 120)
-	$(VENV_PY) -m black -l 120 app tests
+	$(VENV_PY) -m black -l 120 app scripts tests
 
 clean: ## Delete caches and coverage files (keeps .venv)
 	$(PYTHON) -c "import pathlib, shutil; [shutil.rmtree(p, ignore_errors=True) for p in [*pathlib.Path('.').rglob('__pycache__'), pathlib.Path('.pytest_cache'), pathlib.Path('htmlcov')] if '.venv' not in p.parts]; pathlib.Path('.coverage').unlink(missing_ok=True)"

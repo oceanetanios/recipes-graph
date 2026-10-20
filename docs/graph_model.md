@@ -75,7 +75,10 @@ Recipes and users with at least 5 reviews, filtered until stable (removing a use
 - 41,240 recipes
 - 555,618 reviews
 - 20,187 users (17,813 reviewers, plus the authors of the kept recipes)
-- about 8,000 raw ingredient names before cleaning, 360,436 CONTAINS relationships
+- 7,976 raw ingredient names, 7,157 after cleaning, 363,928 CONTAINS relationships
+- 106 cuisines, 61,179 FITS_DIET, 53,724 SERVED_AS and 41,791 HAS_CUISINE relationships
+
+The cleaning is done by scripts/clean_data.py (make prepare-data), with the tag mapping in scripts/tag_groups.py.
 
 Why: 73% of users reviewed only once. They add nothing to similarity or recommendations, they only make GDS slower and noisier. The threshold is a parameter of the import script, so the full dataset can still be loaded.
 
