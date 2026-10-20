@@ -31,6 +31,10 @@ Only Nginx is exposed to the outside. Neo4j's ports (7474 for the browser, 7687 
    ```
    make install
    ```
+5. Clean the raw data (writes `data/processed/`):
+   ```
+   make prepare-data
+   ```
 
 ## Run with Docker
 
@@ -48,6 +52,7 @@ make docker-down     # stop everything (data is kept)
 ```
 make help      # list all commands
 make run       # run the API locally on http://127.0.0.1:8000
+make prepare-data  # clean the raw CSVs into data/processed
 make test      # run the tests with coverage
 make lint      # pylint
 make format    # black
