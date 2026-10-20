@@ -2,7 +2,7 @@
 
 A graph-backed API to explore recipes and ingredients, built with **Neo4j 5 + Graph Data Science**, **FastAPI**, **Nginx** and **Docker Compose** (Python 3.11).
 
-> Status: recipe search, recipe details and ingredient suggestions work. Graph algorithms (GDS) and the natural-language agent are in progress.
+> Status: recipe search, recipe details, ingredient suggestions and the natural-language agent (NL-to-Cypher with guardrails) work. Graph algorithms (GDS) are in progress.
 
 ## Architecture
 
@@ -119,13 +119,61 @@ curl "http://localhost:8080/api/ingredients?q=parmesan&limit=3"
 ]
 ```
 
+### Ask a question in plain English (AI agent)
+
+`POST /api/ask`
+
+```
+curl -X POST "http://localhost:8080/api/ask" -H "Content-Type: application/json" -d "{\"question\": \"Which cuisine has the most vegan recipes?\"}"
+```
+
+```json
+{
+  "question": "Which cuisine has the most vegan recipes?",
+  "status": "answered",
+  "cypher": "MATCH (r:Recipe)-[:FITS_DIET]->(:Diet {name: 'vegan'}), (r)-[:HAS_CUISINE]->(c:Cuisine) RETURN c.name AS cuisine, count(r) AS recipe_count ORDER BY recipe_count DESC LIMIT 1",
+  "results": [{"cuisine": "north-american", "recipe_count": 482}],
+  "summary": "...",
+  "llm_confidence": 1.0,
+  "checks": [{"name": "read-only", "passed": true, "detail": "ok"}, "..."],
+  "attempts": 1,
+  "trace": [
+    {"step": "generate #1", "detail": "query written (self-reported confidence 1.00)"},
+    {"step": "validate", "detail": "all checks passed"},
+    {"step": "execute", "detail": "1 rows returned by Neo4j"}
+  ],
+  "cached": false
+}
+```
+
+Gemini writes a Cypher query, the guardrails check it (read-only, schema, LIMIT, Neo4j EXPLAIN), it runs in a read-only transaction, and the answer keeps the verified rows (`results`) apart from the AI-generated text (`summary`). Add `"summarize": false` to skip the summary and use half the Gemini quota. Details, guardrails and limits: [docs/agent.md](docs/agent.md).
+
+### Check a query with the guardrails
+
+`POST /api/ask/check` runs the same guardrails on any query, without running it and without the LLM:
+
+```
+curl -X POST "http://localhost:8080/api/ask/check" -H "Content-Type: application/json" -d "{\"cypher\": \"MATCH (n) DETACH DELETE n\"}"
+```
+
+```json
+{
+  "passed": false,
+  "checks": [
+    {"name": "read-only", "passed": false, "detail": "write clauses are not allowed: DELETE, DETACH"},
+    {"name": "returns data", "passed": false, "detail": "the query must end with RETURN"},
+    "..."
+  ]
+}
+```
+
 ### Errors
 
 | Code | When |
 |---|---|
 | 404 | no typed ingredient matches anything, or unknown recipe id |
 | 422 | invalid parameter (for example `limit=500`), more than 10 ingredients, unknown diet / course / cuisine |
-| 503 | the graph database is unreachable |
+| 503 | the graph database is unreachable, or (for `/api/ask`) no Gemini key or Gemini unavailable |
 
 ## Screenshots
 
@@ -150,6 +198,7 @@ make run       # run the API locally on http://127.0.0.1:8000
 make prepare-data  # clean the raw CSVs into data/processed
 make seed      # load data/processed into Neo4j (Neo4j must be running)
 make benchmark # compare queries with and without their index (see docs/benchmarks.md)
+make evaluate-agent  # ask the AI agent 13 test questions, writes docs/agent_evaluation.md
 make test      # run the tests with coverage
 make lint      # pylint
 make format    # black
@@ -160,22 +209,29 @@ make format    # black
 ```
 app/
 ├── main.py               # FastAPI app, startup/shutdown, error handlers
+├── agent/                # NL-to-Cypher agent (LangGraph + Gemini)
+│   ├── graph.py          # the workflow: generate, validate, execute, summarize
+│   ├── guardrails.py     # checks on every LLM-written query
+│   ├── prompts.py        # prompts sent to Gemini
+│   └── schema.py         # graph schema used by the prompt and the guardrails
 ├── config.py             # settings read from .env
 ├── dependencies.py       # shared FastAPI dependencies
 ├── ingredient_names.py   # name rules shared by the API and the cleaning script
 ├── database/
 │   └── neo4j_client.py   # Neo4j driver wrapper (read, write, profile)
-├── models/
-│   └── recipes.py        # Pydantic models (inputs and outputs)
+├── models/               # Pydantic models (inputs and outputs)
+│   ├── recipes.py
+│   └── agent.py
 ├── routers/              # HTTP layer: parameters, status codes
 │   ├── health.py         # GET /health
 │   ├── recipes.py        # GET /api/recipes/search, GET /api/recipes/{id}
-│   └── ingredients.py    # GET /api/ingredients
+│   ├── ingredients.py    # GET /api/ingredients
+│   └── agent.py          # POST /api/ask, POST /api/ask/check
 └── services/
     └── recipes.py        # Cypher queries
 docs/                     # graph model, benchmarks, diagrams, screenshots
 nginx/nginx.conf          # reverse proxy configuration
 notebooks/                # data exploration
-scripts/                  # clean_data.py, seed_data.py, benchmark.py
+scripts/                  # clean_data.py, seed_data.py, benchmark.py, evaluate_agent.py
 tests/                    # unit, API and Cypher tests
 ```

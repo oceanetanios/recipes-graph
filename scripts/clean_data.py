@@ -17,6 +17,7 @@ from pathlib import Path
 
 import pandas as pd
 
+from app.agent.schema import NUTRITION_PROPERTIES as NUTRITION_COLUMNS
 from app.ingredient_names import normalize_name as basic_clean
 from app.ingredient_names import singular_candidates
 from scripts.tag_groups import COURSES, CUISINE_PARENT, CUISINES, DIETS
@@ -27,15 +28,6 @@ OUT_DIR = Path("data/processed")
 MAX_MINUTES = 7 * 24 * 60  # more than a week is a placeholder, not a real cooking time
 MAX_CALORIES = 10_000
 MAX_PDV = 10_000  # percent of daily value
-NUTRITION_COLUMNS = [
-    "calories",
-    "total_fat_pdv",
-    "sugar_pdv",
-    "sodium_pdv",
-    "protein_pdv",
-    "saturated_fat_pdv",
-    "carbs_pdv",
-]
 
 # Words removed from the start of an ingredient name, only if the shorter name is a known ingredient.
 LEADING_DESCRIPTORS = {"fresh", "freshly", "large", "medium", "small", "chopped", "minced", "diced", "sliced"}
