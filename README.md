@@ -261,6 +261,18 @@ make lint      # pylint
 make format    # black
 ```
 
+## Tests
+
+`make test` runs everything with a coverage report (97% of `app/`):
+
+- unit tests: cleaning rules, import helpers, guardrails, agent workflow with a fake LLM, metrics
+- API tests: every endpoint with fake services (validation, 404 / 422 / 503 errors)
+- Cypher tests (`tests/test_cypher_queries.py`): real queries on the loaded Neo4j, including the before/after query rewrites
+- container health tests (`tests/test_containers.py`): Nginx -> API -> Neo4j `/health`, Swagger, Neo4j HTTP and Bolt
+- Docker health checks: `docker compose ps` shows neo4j and api as healthy (cypher-shell and `/health` probes)
+
+Cypher and container tests skip themselves when the stack is not running, so the unit and API tests also run without Docker.
+
 ## Project structure
 
 ```
