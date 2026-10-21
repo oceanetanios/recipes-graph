@@ -243,6 +243,10 @@ curl -X POST "http://localhost:8080/api/ask/check" -H "Content-Type: application
 | 422 | invalid parameter (for example `limit=500`), more than 10 ingredients, unknown diet / course / cuisine |
 | 503 | the graph database is unreachable, or (for `/api/ask`) no Gemini key or Gemini unavailable |
 
+## Demo notebook
+
+[demo.ipynb](demo.ipynb) shows the whole project on the running stack: what is in the graph, a recipe and its neighbourhood drawn as a graph, the search, similar recipes (with the shared ingredients drawn), recipe families, the path between two recipes, PROFILE, the agent (one answer and two guardrail rejections) and the ML results. Run it after make docker-run, make seed and make gds, with the "Python (recipes-graph)" kernel.
+
 ## Screenshots
 
 Recipes containing basil in the Neo4j Browser:
@@ -315,6 +319,7 @@ app/
     └── recipes.py        # Cypher queries
 docs/                     # graph model, benchmarks, diagrams, screenshots
 nginx/nginx.conf          # reverse proxy configuration
+demo.ipynb                # demonstration: graph drawings, API calls, GDS, agent, ML
 notebooks/                # data exploration
 scripts/                  # clean_data.py, seed_data.py, graph_algorithms.py, ml_diet.py, benchmark.py, evaluate_agent.py
 tests/                    # unit, API and Cypher tests
