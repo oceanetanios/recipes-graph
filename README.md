@@ -7,15 +7,88 @@
 
 A graph-backed API to explore recipes and ingredients, built with **Neo4j 5 + Graph Data Science**, **FastAPI**, **Nginx** and **Docker Compose** (Python 3.11).
 
-> Status: recipe search, recipe details, ingredient suggestions and the natural-language agent (NL-to-Cypher with guardrails) work. Graph algorithms (GDS) are in progress.
+The Food.com recipes and reviews are modeled as a graph (recipes, ingredients, cuisines, diets, courses, users). The API answers questions that are natural on a graph:
+
+- what can I cook with the ingredients I have? (`/api/recipes/search`)
+- which recipes are similar to this one, and why? (GDS Node Similarity, `/api/recipes/{id}/similar`)
+- which family of dishes does it belong to? (GDS Louvain, `/api/recipes/{id}/community`)
+- how do I get from one recipe to another? (shortest path, `/api/recipes/path`)
+- any question in plain English (NL-to-Cypher agent with LangGraph, Gemini and guardrails, `/api/ask`)
+- plus an ML workflow that predicts vegetarian recipes from graph embeddings (`make ml`)
 
 ## Architecture
 
-```
-Browser ──▶ Nginx (localhost:8080) ──▶ FastAPI (api:8000) ──▶ Neo4j + GDS (neo4j:7687)
+```mermaid
+flowchart LR
+    user["Browser / curl / demo.ipynb"] -->|"HTTP :8080"| nginx["nginx<br/>reverse proxy<br/>(nginx:1.27-alpine)"]
+    nginx -->|"HTTP api:8000"| api["api<br/>FastAPI + LangGraph agent<br/>(oceane17/recipes-graph-api)"]
+    api -->|"Bolt neo4j:7687<br/>read transactions"| neo4j[("neo4j<br/>Neo4j 5 + GDS<br/>volume neo4j_data")]
+    api -->|"HTTPS"| gemini["Gemini API<br/>(Google)"]
+    scripts["scripts/ on the host<br/>clean, seed, gds, ml, benchmarks"] -->|"Bolt localhost:7687"| neo4j
+    dev["developer"] -->|"HTTP :7474 Neo4j Browser"| neo4j
 ```
 
-Only Nginx is exposed to the outside. Neo4j's ports (7474 for the browser, 7687 for Bolt) are also exposed for development.
+- 3 Docker Compose services: `nginx` (port 8080, the only entry to the API), `api` (port 8000, not published) and `neo4j` (7474 Browser, 7687 Bolt, published for development)
+- health checks: neo4j with cypher-shell, api with `/health`; api starts when neo4j is healthy, nginx when api is healthy
+- data flow: raw CSV (`data/raw`) -> `make prepare-data` -> `data/processed` -> `make seed` -> Neo4j -> `make gds` writes SIMILAR_TO and communities -> the API reads
+- secrets (`.env`) are given to the api container at start (`env_file`); the image contains none
+- a draw.io version of the diagrams is in `docs/diagrams/`
+
+## Graph schema
+
+```mermaid
+flowchart LR
+    User((User)) -->|SUBMITTED| Recipe((Recipe))
+    User -->|"REVIEWED {rating, date}"| Recipe
+    Recipe -->|CONTAINS| Ingredient((Ingredient))
+    Ingredient -.->|"IN_CATEGORY (designed, not loaded)"| IngredientCategory((IngredientCategory))
+    Recipe -->|HAS_CUISINE| Cuisine((Cuisine))
+    Cuisine -->|PART_OF| Cuisine
+    Recipe -->|FITS_DIET| Diet((Diet))
+    Recipe -->|SERVED_AS| Course((Course))
+    Recipe -->|"SIMILAR_TO {score} (GDS)"| Recipe
+```
+
+| Label | Main properties | Count |
+|---|---|---|
+| Recipe | id, name, minutes, n_steps, calories and 6 nutrition values, community | 41,240 |
+| User | id | 20,187 |
+| Ingredient | name, recipe_count | 7,157 |
+| Cuisine | name (hierarchy with PART_OF) | 106 |
+| Diet | name | 19 |
+| Course | name | 13 |
+
+Constraints: unique Recipe.id, User.id and name of Ingredient, IngredientCategory, Cuisine, Diet, Course. Indexes: Recipe.minutes, Recipe.calories, Recipe.community, full-text on Recipe.name and Ingredient.name.
+
+## Dataset
+
+- source: [Food.com Recipes and User Interactions](https://www.kaggle.com/datasets/shuyangli94/food-com-recipes-and-user-interactions) (Kaggle, crawled from Food.com, Majumder et al., EMNLP 2019): `RAW_recipes.csv` (231,637 recipes) and `RAW_interactions.csv` (1,132,367 reviews)
+- why: real, large and naturally a graph (recipes share ingredients, users review many recipes), with tags for cuisines, diets and courses
+- loaded: recipes and users with at least 5 reviews, so the similarity and the communities are not dominated by one-off users (73% reviewed only once)
+- exploration: [notebooks/01_data_exploration.ipynb](notebooks/01_data_exploration.ipynb)
+
+## Modeling rationale
+
+Full version with the rejected alternatives: [docs/graph_model.md](docs/graph_model.md). In short:
+
+- ingredients are nodes, not a list on the recipe: one ingredient is shared by thousands of recipes, so "recipes sharing ingredients" is a 2-hop traversal and GDS can use it
+- tags are split into Cuisine, Diet and Course instead of one generic Tag: they answer different questions, and only cuisines have a hierarchy (italian PART_OF european); meta tags on almost every recipe are dropped
+- one User label for authors and reviewers (same Food.com accounts)
+- reviews are relationships with properties, not nodes: nothing else points to a review
+- nutrition and cooking time are properties (one recipe each, filtered with range indexes)
+- rating 0 means "comment without rating" and becomes null
+- the comparison with a schema proposed by an AI assistant (anti-genericity appendix) is at the end of docs/graph_model.md
+
+## Documentation
+
+| File | Content |
+|---|---|
+| [docs/graph_model.md](docs/graph_model.md) | graph model, decisions, rejected alternatives, anti-genericity appendix |
+| [docs/algorithms.md](docs/algorithms.md) | GDS: Node Similarity, Louvain, shortest path, why these choices |
+| [docs/ml.md](docs/ml.md) | ML workflow: vegetarian classification with FastRP embeddings |
+| [docs/agent.md](docs/agent.md) | NL-to-Cypher agent, guardrails, reliability, limits |
+| [docs/agent_evaluation.md](docs/agent_evaluation.md) | the agent on 13 test questions |
+| [docs/benchmarks.md](docs/benchmarks.md) | indexes and query rewrites, before / after with PROFILE |
 
 ## Prerequisites
 
@@ -324,3 +397,17 @@ notebooks/                # data exploration
 scripts/                  # clean_data.py, seed_data.py, graph_algorithms.py, ml_diet.py, benchmark.py, evaluate_agent.py
 tests/                    # unit, API and Cypher tests
 ```
+
+## Team contributions
+
+Individual project.
+
+| Member | Commits | Role |
+|---|---|---|
+| Oceane Tanios | 31 (all) | everything: data, graph model, Neo4j, API, GDS, ML, agent, Docker, tests, documentation |
+
+Work was done on feature branches merged through pull requests (see the Pull requests tab).
+
+## Use of AI assistants
+
+An AI coding assistant (Claude Code) was used for scaffolding, code and documentation, as allowed by the project rules. The modeling decisions, their justification and the anti-genericity comparison are in docs/graph_model.md.
