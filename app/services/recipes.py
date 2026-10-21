@@ -9,15 +9,19 @@ from app.models.recipes import MatchMode
 
 # Starts from the indexed Ingredient nodes (never from all recipes), filters, sorts and cuts the page,
 # and only then builds the list of missing ingredients, so that expensive part runs for one page only.
+# Optimizations (docs/benchmarks.md, section 3): the cuisine hierarchy is expanded ONCE into a list of cuisine
+# nodes instead of once per candidate recipe, and the time filter runs before the aggregation.
 SEARCH_QUERY = """
+OPTIONAL MATCH (sub:Cuisine)-[:PART_OF*0..4]->(:Cuisine {name: $cuisine})
+WITH collect(sub) AS cuisines
 UNWIND $ingredients AS name
 MATCH (r:Recipe)-[:CONTAINS]->(i:Ingredient {name: name})
-WITH r, collect(i.name) AS matched
+WHERE $max_minutes IS NULL OR r.minutes <= $max_minutes
+WITH r, cuisines, collect(i.name) AS matched
 WHERE size(matched) >= $min_matched
-  AND ($max_minutes IS NULL OR r.minutes <= $max_minutes)
   AND ($diet IS NULL OR EXISTS { (r)-[:FITS_DIET]->(:Diet {name: $diet}) })
   AND ($course IS NULL OR EXISTS { (r)-[:SERVED_AS]->(:Course {name: $course}) })
-  AND ($cuisine IS NULL OR EXISTS { (r)-[:HAS_CUISINE]->(:Cuisine)-[:PART_OF*0..4]->(:Cuisine {name: $cuisine}) })
+  AND ($cuisine IS NULL OR EXISTS { (r)-[:HAS_CUISINE]->(c:Cuisine) WHERE c IN cuisines })
 WITH r, matched,
      COUNT { (r)-[:CONTAINS]->() } - size(matched) AS missing_count,
      COUNT { (r)<-[:REVIEWED]-() } AS reviews

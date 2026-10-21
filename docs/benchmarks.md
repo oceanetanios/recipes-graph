@@ -63,6 +63,36 @@ Takeaways:
 - with the scan, it pairs every recipe with the parmesan node (CartesianProduct, 41,240 pairs) and then checks for each pair if they are connected (Expand(Into), almost 1M db hits). Same 571 results, 55 times more work.
 - a CartesianProduct in a plan is a warning sign: it means two parts of the pattern are not connected, so Neo4j combines everything with everything.
 
-## 3. Query optimizations
+## 3. Query optimizations (2026-10-21)
 
-To be added with the API endpoints (step 24): before/after for the rewritten queries (LIMIT, pagination, subqueries, avoiding cartesian products).
+Measured with scripts/optimizations.py (part of make benchmark). For each pair the script checks that the "before" and "after" queries return exactly the same rows. Times are medians of 7 runs, repeated 3 times because the laptop timings are noisy; db hits are stable.
+
+    rewrite                                        version    db hits   median ms (3 repeats)
+    filtered search, egg + parmesan, vegetarian,   before     413,020   139 - 286
+      european (with sub-cuisines), <= 30 min      after      153,157    55 - 71
+    pagination: LIMIT before the expensive part    before     124,197   171 - 212
+                                                   after      124,197   148 - 156
+    cartesian product vs connected pattern         before     615,768   201
+                                                   after        3,527    18
+
+3.1 Filtered search (GET /api/recipes/search, now in app/services/recipes.py)
+- before: all recipes containing the ingredients were grouped first, then filtered; the cuisine filter walked PART_OF*0..4 again for every candidate recipe
+- after: the time filter runs on each recipe before the aggregation (WHERE right after the MATCH), so fewer rows are grouped; the cuisine hierarchy is expanded once into a list of cuisine nodes, then each recipe only checks HAS_CUISINE into that list
+- -63% db hits, about 2 to 4 times faster. Measured separately, most of the gain comes from filtering before the aggregation (the cuisine change alone saves 2% of db hits)
+
+3.2 Pagination
+- before: the ingredient list was built for all 41,240 recipes, then sorted and cut to 20
+- after: sort and cut to 20 first, then build the list for those 20 only
+- same db hits (Neo4j already reads the relationships lazily) but about 25% less time, because 41,240 lists are no longer built in memory. The search endpoint uses the same idea: missing_ingredients is computed after SKIP / LIMIT
+
+3.3 Cartesian product
+- before: MATCH (c:Cuisine {name: 'italian'}), (r:Recipe) WHERE (r)-[:HAS_CUISINE]->(c): two separate patterns, so Neo4j pairs the cuisine with every recipe and checks each pair
+- after: one connected pattern (r:Recipe)-[:HAS_CUISINE]->(:Cuisine {name: 'italian'}), so Neo4j starts from the cuisine (index seek) and only follows its relationships
+- 615,768 -> 3,527 db hits (175 times less), 11 times faster
+
+Already in place elsewhere (see the code):
+- every query is parameterized ($name...), so plans are cached and user input never becomes Cypher
+- LIMIT everywhere: limit / offset parameters on the API (max 50), LIMIT added by the agent guardrails
+- has_more is computed by asking limit + 1 rows instead of a separate count query
+- COUNT { } and EXISTS { } subqueries instead of OPTIONAL MATCH + count, which would multiply rows
+- bounded variable-length paths (PART_OF*0..4, SIMILAR_TO*..8) so a traversal cannot explode as the graph grows

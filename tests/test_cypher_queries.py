@@ -7,6 +7,7 @@ import pytest
 from app.config import settings
 from app.database.neo4j_client import Neo4jClient
 from app.services.recipes import RecipeService
+from scripts.optimizations import PAIRS
 
 pytestmark = pytest.mark.neo4j
 
@@ -106,6 +107,13 @@ def test_community_and_path(service: RecipeService) -> None:
 
     assert community["size"] > 1
     assert [step["id"] for step in path["path"]] == [recipe_id, similar[0]["id"]]
+
+
+def test_optimized_queries_return_the_same_rows(service: RecipeService) -> None:
+    """Every rewrite measured in docs/benchmarks.md gives exactly the same results as the original query."""
+    db = service._db  # pylint: disable=protected-access
+    for name, before, after, params in PAIRS:
+        assert db.run_read(before, params) == db.run_read(after, params), name
 
 
 def test_unknown_filters(service: RecipeService) -> None:
