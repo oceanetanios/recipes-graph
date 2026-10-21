@@ -56,6 +56,14 @@ make docker-run      # start Neo4j, the API and Nginx
 make docker-down     # stop everything (data is kept)
 ```
 
+The API image is also published on Docker Hub: [oceane17/recipes-graph-api](https://hub.docker.com/r/oceane17/recipes-graph-api)
+
+```
+docker pull oceane17/recipes-graph-api:latest
+```
+
+It contains only `app/` and the runtime libraries (no `.env`, no data): settings and secrets are given when the container starts. To publish a new version: `docker login`, then `make docker-push DOCKERHUB_USER=oceane17`.
+
 - API health: http://localhost:8080/health → `{"status":"ok","neo4j":"up"}`
 - API docs: http://localhost:8080/docs
 - Neo4j Browser: http://localhost:7474 (user `neo4j`, password from `.env`)
