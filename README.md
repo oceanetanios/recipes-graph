@@ -1,5 +1,10 @@
 # Recipe & Ingredient Explorer
 
+[![Lint](https://github.com/oceanetanios/recipes-graph/actions/workflows/lint.yml/badge.svg)](https://github.com/oceanetanios/recipes-graph/actions/workflows/lint.yml)
+[![Tests](https://github.com/oceanetanios/recipes-graph/actions/workflows/tests.yml/badge.svg)](https://github.com/oceanetanios/recipes-graph/actions/workflows/tests.yml)
+![Coverage](https://img.shields.io/badge/coverage-97%25-brightgreen)
+![Pylint](https://img.shields.io/badge/pylint-10.00-brightgreen)
+
 A graph-backed API to explore recipes and ingredients, built with **Neo4j 5 + Graph Data Science**, **FastAPI**, **Nginx** and **Docker Compose** (Python 3.11).
 
 > Status: recipe search, recipe details, ingredient suggestions and the natural-language agent (NL-to-Cypher with guardrails) work. Graph algorithms (GDS) are in progress.
@@ -272,6 +277,8 @@ make format    # black
 - Docker health checks: `docker compose ps` shows neo4j and api as healthy (cypher-shell and `/health` probes)
 
 Cypher and container tests skip themselves when the stack is not running, so the unit and API tests also run without Docker.
+
+GitHub Actions run on every push and pull request: `.github/workflows/lint.yml` (pylint at least 9.5 and black) and `.github/workflows/tests.yml` (pytest, coverage at least 60%). The coverage and pylint badges show the values measured locally with the full stack running.
 
 ## Project structure
 
