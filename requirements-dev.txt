@@ -6,3 +6,4 @@ pylint>=3.2
 black>=24.4
 jupyter>=1.0
 matplotlib>=3.9
+networkx>=3.3
