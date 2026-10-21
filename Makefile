@@ -14,7 +14,7 @@ endif
 .DEFAULT_GOAL := help
 
 # These names are commands, not files.
-.PHONY: help venv install run prepare-data seed gds ml benchmark evaluate-agent docker-build docker-run docker-down logs test lint format clean
+.PHONY: help venv install run prepare-data seed gds ml benchmark evaluate-agent docker-build docker-run docker-push docker-down logs test lint format clean
 
 help: ## Show this list of commands
 	@$(PYTHON) -c "import re; [print(f'  make {name:<14} {desc}') for name, desc in re.findall(r'^([a-z-]+):.*?## (.*)$$', open('Makefile').read(), re.M)]"
@@ -53,6 +53,12 @@ docker-build: ## Build the Docker images
 
 docker-run: ## Build and start Neo4j, the API and Nginx in the background
 	docker compose up --build -d
+
+docker-push: ## Publish the API image on Docker Hub (after docker login): make docker-push DOCKERHUB_USER=yourname
+	$(if $(DOCKERHUB_USER),,$(error Give your Docker Hub user name: make docker-push DOCKERHUB_USER=yourname))
+	docker compose build api
+	docker tag recipes-graph-api $(DOCKERHUB_USER)/recipes-graph-api:latest
+	docker push $(DOCKERHUB_USER)/recipes-graph-api:latest
 
 docker-down: ## Stop and remove the containers (the database data is kept)
 	docker compose down
