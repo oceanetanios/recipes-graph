@@ -41,8 +41,9 @@ gds: ## Run the graph algorithms (GDS) and write their results (after make seed,
 ml: ## ML workflow: predict vegetarian recipes from FastRP embeddings, writes docs/ml.md
 	$(VENV_PY) -m scripts.ml_diet
 
-benchmark: ## Compare queries with and without their index (PROFILE db hits + timings)
+benchmark: ## Index and query-rewrite benchmarks, before/after (PROFILE db hits + timings)
 	$(VENV_PY) -m scripts.benchmark
+	$(VENV_PY) -m scripts.optimizations
 
 evaluate-agent: ## Ask the AI agent 13 test questions and write docs/agent_evaluation.md (uses Gemini quota)
 	$(VENV_PY) -m scripts.evaluate_agent
