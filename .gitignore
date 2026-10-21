@@ -17,5 +17,8 @@ htmlcov/
 data/raw/
 data/processed/
 
+# Personal oral exam notes
+oral_prep.md
+
 # Jupyter notebook autosaves
 .ipynb_checkpoints/
