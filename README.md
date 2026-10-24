@@ -406,7 +406,7 @@ Individual project.
 |---|---|---|
 | Oceane Tanios | 31 (all) | everything: data, graph model, Neo4j, API, GDS, ML, agent, Docker, tests, documentation |
 
-Work was done on feature branches merged through pull requests (see the Pull requests tab).
+Work was done on feature branches (one per step), merged through 15 pull requests: [list of merged pull requests](https://github.com/oceanetanios/recipes-graph/pulls?q=is%3Apr+is%3Amerged). Lint and test workflows run on each of them.
 
 ## Use of AI assistants
 
