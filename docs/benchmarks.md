@@ -10,6 +10,8 @@ How:
 
 ## 1. Index vs scan (2026-10-20)
 
+Measured before SIMILAR_TO was added to the graph. Re-run on 2026-11-01 with SIMILAR_TO: same numbers, except the forced scan of the egg and parmesan query, which went from 1,125,274 to 1,507,101 db hits (recipes have more relationships to go through). The indexed version did not change.
+
     query                                          version     db hits  median ms  first operator
     ingredient by name (unique constraint)         index             3       15.2  NodeUniqueIndexSeek
     ingredient by name (unique constraint)         scan         14,316       44.1  NodeByLabelScan
